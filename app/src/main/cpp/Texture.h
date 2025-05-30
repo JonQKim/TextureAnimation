@@ -21,11 +21,22 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+
 #include <GLES2/gl2.h>
 
-/**
- * \brief Loads a simple 3 x 3 static texture into OpenGL ES.
- * \return Returns the handle to the texture object.
- */
-GLuint loadSimpleTexture();
+#include <cstdio>
+#include <cstdlib>
+
+
+const int numTextures = 9;
+const int textureWidth = 256;
+const int textureHeight = 256;
+const int textureChannels = 3;
+
+
+
+bool readTextureFiles();
+bool loadTexturesFromData();
+
+
 #endif

@@ -130,11 +130,14 @@ GLuint samplerLocation;
 GLuint projectionLocation;
 GLuint modelViewLocation;
 GLuint textureCordLocation;
-GLuint textureId;
 
 float projectionMatrix[16];
 float modelViewMatrix[16];
 float angle = 0;
+
+int frame_count;
+int num_frames_texture_change = 30;
+
 
 /* [setupGraphicsUpdate] */
 bool setupGraphics(int width, int height)
@@ -159,16 +162,8 @@ bool setupGraphics(int width, int height)
 
     glViewport(0, 0, width, height);
 
-    /* Load the Texture. */
-    textureId = loadSimpleTexture();
-    if(textureId == 0)
-    {
-        return false;
-    }
-    else
-    {
-        return true;
-    }
+    frame_count = 0;
+    return true;
 }
 /* [setupGraphicsUpdate] */
 /* [verticesAndTexture] */
@@ -227,6 +222,7 @@ GLfloat textureCords[] = { 1.0f, 1.0f, /* Back. */
 
 GLushort indicies[] = {0, 3, 2, 0, 1, 3, 4, 6, 7, 4, 7, 5,  8, 9, 10, 8, 11, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
 
+
 void renderFrame()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -249,8 +245,10 @@ void renderFrame()
     glUniformMatrix4fv(projectionLocation, 1, GL_FALSE,projectionMatrix);
     glUniformMatrix4fv(modelViewLocation, 1, GL_FALSE, modelViewMatrix);
 
+    int texture_index = int(frame_count / num_frames_texture_change) % numTextures;
+    ++frame_count;
     /* Set the sampler texture unit to 0. */
-    glUniform1i(samplerLocation, 0);
+    glUniform1i(samplerLocation, texture_index);
     /* [enableAttributes] */
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, indicies);
 
@@ -261,16 +259,19 @@ void renderFrame()
     }
 }
 
+
 extern "C"
 {
-	JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_textureanimation_NativeLibrary_init(
-			JNIEnv * env, jclass clazz, jint width, jint height) {
-        setupGraphics(width, height);
-    }
+JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_textureanimation_NativeLibrary_init(
+        JNIEnv * env, jclass clazz, jint width, jint height) {
+    readTextureFiles();
+    loadTexturesFromData();
+    setupGraphics(width, height);
+}
 
-    JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_textureanimation_NativeLibrary_step(
-            JNIEnv * env, jclass clazz) {
-        renderFrame();
-    }
+JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_textureanimation_NativeLibrary_step(
+        JNIEnv * env, jclass clazz) {
+    renderFrame();
+}
 }
 /* [Function definitions] */

@@ -2,48 +2,76 @@
 #include "Texture.h"
 
 #include <GLES2/gl2ext.h>
-#include <cstdio>
-#include <cstdlib>
 
-GLuint loadSimpleTexture()
-{
-    /* Texture Object Handle. */
-    GLuint textureId;
 
-    /* 3 x 3 Image,  R G B A Channels RAW Format. */
-    GLubyte pixels[9 * 4] =
-    {
-            18,  140, 171, 255, /* Some Colour Bottom Left. */
-            143, 143, 143, 255, /* Some Colour Bottom Middle. */
-            255, 255, 255, 255, /* Some Colour Bottom Right. */
-            255, 255, 0,   255, /* Yellow Middle Left. */
-            0,   255, 255, 255, /* Some Colour Middle. */
-            255, 0,   255, 255, /* Some Colour Middle Right. */
-            255, 0,   0,   255, /* Red Top Left. */
-            0,   255, 0,   255, /* Green Top Middle. */
-            0,   0,   255, 255, /* Blue Top Right. */
-    };
-    /* [includeTextureDefinition] */
+unsigned char * textureData;
+char filePaths[numTextures][100]= {
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/1.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/2.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/3.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/4.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/5.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/6.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/7.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/8.raw",
+        "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/9.raw",
+};
 
-    /* [placeTextureInMemory] */
-    /* Use tightly packed data. */
-    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    /* Generate a texture object. */
-    glGenTextures(1, &textureId);
-
-    /* Activate a texture. */
-    glActiveTexture(GL_TEXTURE0);
-
-    /* Bind the texture object. */
-    glBindTexture(GL_TEXTURE_2D, textureId);
-
-    /* Load the texture. */
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 3, 3, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-
-    /* Set the filtering mode. */
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    return textureId;
+bool readTextureFile(char* filePath, unsigned char* data) {
+    FILE *file;
+    file = fopen(filePath, "rb");
+    if (file == NULL) {
+        return 1;
+    }
+    fread(data, textureChannels, textureWidth * textureHeight, file);
+    fclose(file);
+    return 0;
 }
+
+
+bool readTextureFiles() {
+    textureData = (unsigned char *) malloc(textureWidth * textureHeight * textureChannels * numTextures);
+
+    for (int textureIndex = 0; textureIndex < numTextures; ++textureIndex){
+        char* filePath = filePaths[textureIndex];
+        unsigned char *data = textureData + textureWidth * textureHeight * 3 * textureIndex;
+        readTextureFile(filePath, data);
+    }
+    return true;
+}
+
+
+bool loadTextureFromData(int width, int height, int textureIndex, int textureUnitIndex, bool update) {
+    unsigned char *data = textureData + width * height * 3 * textureIndex;
+
+    /* Texture Object Handle. */
+    GLuint texture;
+    glGenTextures(1, &texture);
+    glActiveTexture(GL_TEXTURE0 + textureUnitIndex);
+    glBindTexture(GL_TEXTURE_2D, texture);
+
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    if (!update) {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    } else {
+        glTexSubImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    }
+    glGenerateMipmap(GL_TEXTURE_2D);
+
+    return true;
+}
+
+
+bool loadTexturesFromData() {
+    for (int i = 0; i < numTextures; ++i) {
+        loadTextureFromData( 256 , 256 , i, i, false) ; // Load first texture
+    }
+
+    return true;
+}
+
