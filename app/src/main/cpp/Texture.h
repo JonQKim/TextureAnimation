@@ -22,7 +22,7 @@
 #define TEXTURE_H
 
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl32.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -32,8 +32,10 @@ const int numTextures = 9;
 const int textureWidth = 256;
 const int textureHeight = 256;
 const int textureChannels = 3;
+const const int textureDataSize = textureWidth * textureHeight * textureChannels;
 
-
+extern unsigned char * textureData;
+extern GLuint textureId;
 
 bool readTextureFiles();
 bool loadTexturesFromData();

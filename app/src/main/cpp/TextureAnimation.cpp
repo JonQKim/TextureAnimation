@@ -1,12 +1,13 @@
 #include <jni.h>
 #include <android/log.h>
 
-#include <GLES2/gl2.h>
+#include <GLES3/gl32.h>
 #include <GLES2/gl2ext.h>
 
 #include <cstdio>
 #include <cstdlib>
 #include <cmath>
+#include <cstring>
 
 #include "Matrix.h"
 #include "Texture.h"
@@ -14,6 +15,7 @@
 #define LOG_TAG "libNative"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
+
 
 /* [shaders] */
 static const char glVertexShader[] =
@@ -138,6 +140,8 @@ float angle = 0;
 int frame_count;
 int num_frames_texture_change = 30;
 
+GLuint pboIds[2];
+int index = 0;
 
 /* [setupGraphicsUpdate] */
 bool setupGraphics(int width, int height)
@@ -154,7 +158,18 @@ bool setupGraphics(int width, int height)
     textureCordLocation = glGetAttribLocation(glProgram, "vertexTextureCord");
     projectionLocation = glGetUniformLocation(glProgram, "projection");
     modelViewLocation = glGetUniformLocation(glProgram, "modelView");
-    samplerLocation = glGetUniformLocation(glProgram, "texture");
+
+    glGenBuffers(2, pboIds);
+    for (int i = 0; i < 2; ++i) {
+        glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[i]);
+        glBufferData(GL_PIXEL_UNPACK_BUFFER, textureDataSize, nullptr, GL_STREAM_DRAW);
+    }
+    glGenTextures(1, &textureId);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, textureId);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB8, textureWidth, textureHeight);
+    samplerLocation = glGetUniformLocation(glProgram, "textureId");
+    glUniform1i(samplerLocation, 0);
 
     /* Setup the perspective. */
     matrixPerspective(projectionMatrix, 45, (float)width / (float)height, 0.1f, 100);
@@ -249,9 +264,23 @@ void renderFrame()
 
     int texture_index = int(frame_count / num_frames_texture_change) % numTextures;
     ++frame_count;
-    /* Set the sampler texture unit to 0. */
-    glUniform1i(samplerLocation, texture_index);
-    /* [enableAttributes] */
+
+    index = (index + 1) % 2;
+    int nextIndex = (index + 1) % 2;
+
+    // 1. copy to PBO
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[nextIndex]);
+    GLubyte* ptr = (GLubyte*) glMapBufferRange(GL_PIXEL_UNPACK_BUFFER, 0, textureDataSize, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_BUFFER_BIT);
+    if (ptr) {
+        memcpy(ptr, textureData + textureDataSize * texture_index, textureDataSize);
+        glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
+    }
+
+    // 2. copy from PBO to textureId
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pboIds[index]);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, textureWidth, textureHeight, GL_RGB, GL_UNSIGNED_BYTE, 0);
+    glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, indicies);
 
     angle += 0.1;
@@ -269,7 +298,6 @@ extern "C"
 JNIEXPORT void JNICALL Java_com_arm_malideveloper_openglessdk_textureanimation_NativeLibrary_init(
         JNIEnv * env, jclass clazz, jint width, jint height) {
     readTextureFiles();
-    loadTexturesFromData();
     setupGraphics(width, height);
 }
 

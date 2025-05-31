@@ -3,8 +3,9 @@
 
 #include <GLES2/gl2ext.h>
 
-
 unsigned char * textureData;
+GLuint textureId;
+
 char filePaths[numTextures][100]= {
         "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/1.raw",
         "/data/user/0/com.arm.malideveloper.openglessdk.textureanimation/files/2.raw",
@@ -31,11 +32,10 @@ bool readTextureFile(char* filePath, unsigned char* data) {
 
 
 bool readTextureFiles() {
-    textureData = (unsigned char *) malloc(textureWidth * textureHeight * textureChannels * numTextures);
-
+    textureData = (unsigned char *) malloc(textureDataSize * numTextures);
     for (int textureIndex = 0; textureIndex < numTextures; ++textureIndex){
         char* filePath = filePaths[textureIndex];
-        unsigned char *data = textureData + textureWidth * textureHeight * 3 * textureIndex;
+        unsigned char *data = textureData + textureDataSize * textureIndex;
         readTextureFile(filePath, data);
     }
     return true;
@@ -43,7 +43,7 @@ bool readTextureFiles() {
 
 
 bool loadTextureFromData(int width, int height, int textureIndex, int textureUnitIndex, bool update) {
-    unsigned char *data = textureData + width * height * 3 * textureIndex;
+    unsigned char *data = textureData + textureDataSize * textureIndex;
 
     /* Texture Object Handle. */
     GLuint texture;
