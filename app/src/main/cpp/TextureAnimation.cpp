@@ -223,6 +223,8 @@ GLfloat textureCords[] = { 1.0f, 1.0f, /* Back. */
 GLushort indicies[] = {0, 3, 2, 0, 1, 3, 4, 6, 7, 4, 7, 5,  8, 9, 10, 8, 11, 10, 12, 13, 14, 15, 12, 14, 16, 17, 18, 16, 19, 18, 20, 21, 22, 20, 23, 22};
 
 
+#include "FPSCounter.h"
+static FPSCounter fps("TextureAnimation");
 void renderFrame()
 {
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -257,6 +259,8 @@ void renderFrame()
     {
         angle -= 360;
     }
+
+    fps.tick();
 }
 
 

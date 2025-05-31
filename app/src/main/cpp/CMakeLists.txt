@@ -5,7 +5,8 @@ project("Native")
 add_library(${CMAKE_PROJECT_NAME} SHARED
     TextureAnimation.cpp
     Matrix.cpp
-    Texture.cpp)
+    Texture.cpp
+    FPSCounter.cpp)
 
 set(LIB_DEPENDENCIES "")
 list(APPEND LIB_DEPENDENCIES "-lEGL")
